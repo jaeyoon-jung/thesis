@@ -1,0 +1,242 @@
+log using "/u/jyjung/thesis/thesis.log", replace name(thesis)
+use "/u/jyjung/thesis/patent_CL.dta", clear
+drop if year <1988
+label variable log_patent_count1 "Log Patent Count"
+label variable prevalence "Disease Prevalence"
+gen post = year >=2002
+label variable post "Post Doha"
+gen post_request = post * request_treated
+label variable post_request "CL Requested x Post Doha"
+gen post_CL = post * CL_treated
+label variable post_CL "CL Issued x Post Doha"
+gen post_discount = post * discount_treated
+label variable post_discount "Discounted x Post Doha"
+
+gen time = year - 1984
+label variable time "Time Trend"
+gen global = 0
+replace global = 1 if neglected == 0
+label variable global "Global"
+label variable neglected "Neglected"
+
+gen neglected_post_request = post_request * neglected
+label variable neglected_post_request "Neglected x CL Requested x Post Doha"
+gen global_post_request = post_request * global
+label variable global_post_request "Global x CL Requested x Post Doha"
+
+gen neglected_post_CL = post_CL * neglected
+label variable neglected_post_CL "Neglected x CL Issued x Post Doha"
+gen global_post_CL = post_CL * global
+label variable global_post_CL "Global x CL Issued x Post Doha"
+
+gen neglected_post_discount = post_discount * neglected
+label variable neglected_post_discount "Neglected x Discounted x Post Doha"
+gen global_post_discount = post_discount * global
+label variable global_post_discount "Global x Discounted x Post Doha"
+
+******************************
+*** baseline: post request ***
+******************************
+areg log_patent_count1 post_request time i.year, a(disease_code) cluster(disease_code)
+testparm post_request
+outreg2 using thesis/baseline.doc, replace ctitle("CL Request", "All") keep(post_request time) addstat(Prob>F, `r(p)') addtext(Year FE, YES, Disease FE, YES, Cluster SE, Disease) label
+
+areg log_patent_count1 neglected_post_request global_post_request time i.year ,a(disease_code) cluster(disease_code)
+testparm neglected_post_request global_post_request
+outreg2 using thesis/baseline.doc, append ctitle("CL Request", "By Type") keep(neglected_post_request global_post_request time) addstat(Prob>F, `r(p)') addtext(Year FE, YES, Disease FE, YES, Cluster SE, Disease) label
+
+******************************
+*** baseline: post CL ***
+******************************
+areg log_patent_count1 post_CL time prevalence i.year ,a(disease_code) cluster(disease_code)
+testparm post_CL
+outreg2 using thesis/baseline.doc, append ctitle("CL Issued", "All") keep(post_CL time) addstat(Prob>F, `r(p)') addtext(Year FE, YES, Disease FE, YES, Cluster SE, Disease) label
+
+areg log_patent_count1 neglected_post_CL global_post_CL time i.year ,a(disease_code) cluster(disease_code)
+testparm neglected_post_CL global_post_CL
+outreg2 using thesis/baseline.doc, append ctitle("CL Issued", "By Type") keep(neglected_post_CL global_post_CL time) addstat(Prob>F, `r(p)') addtext(Year FE, YES, Disease FE, YES, Cluster SE, Disease) label
+
+******************************
+*** baseline: post Discount ***
+******************************
+areg log_patent_count1 post_discount time prevalence i.year ,a(disease_code) cluster(disease_code)
+testparm post_discount
+outreg2 using thesis/baseline.doc, append ctitle("Discount", "All") keep(post_discount time) addstat(Prob>F, `r(p)') addtext(Year FE, YES, Disease FE, YES, Cluster SE, Disease) label
+
+
+areg log_patent_count1 neglected_post_discount global_post_discount time i.year ,a(disease_code) cluster(disease_code)
+testparm neglected_post_discount global_post_discount
+outreg2 using thesis/baseline.doc, append ctitle("Discount", "By Type") keep(neglected_post_discount global_post_discount time) addstat(Prob>F, `r(p)') addtext(Year FE, YES, Disease FE, YES, Cluster SE, Disease) label
+
+************************************************************
+***********************INTENSITY****************************
+************************************************************
+
+*******************************
+*********** Request ***********
+*******************************
+gen neglected_request_cum = neglected * request_cumulative
+label variable neglected_request_cum "Cumulative Requests x Neglected"
+gen global_request_cum = global * request_cumulative
+label variable global_request_cum "Cumulative Requests x Global"
+
+areg log_patent_count1 neglected_request_cum global_request_cum time prevalence i.year ,a(disease_code) cluster(disease_code)
+testparm neglected_request_cum global_request_cum
+outreg2 using thesis/intensity.doc, replace ctitle("Cumulative Requests") keep(neglected_request_cum global_request_cum time prevalence) addstat(Prob>F, `r(p)') addtext(Year FE, YES, Disease FE, YES, Cluster SE, Disease) label
+
+
+*******************************
+************* CL **************
+*******************************
+gen neglected_CL_cum = neglected * CL_cumulative
+label variable neglected_CL_cum "Cumulative CLs x Neglected"
+gen global_CL_cum = global * CL_cumulative
+label variable global_CL_cum "Cumulative CLs x Global"
+
+areg log_patent_count1 neglected_CL_cum global_CL_cum time prevalence i.year ,a(disease_code) cluster(disease_code)
+testparm neglected_CL_cum global_CL_cum
+outreg2 using thesis/intensity.doc, append ctitle("Cumulative CLs") keep(neglected_CL_cum global_CL_cum time prevalence) addstat(Prob>F, `r(p)') addtext(Year FE, YES, Disease FE, YES, Cluster SE, Disease) label
+
+*******************************
+********** discount ***********
+*******************************
+gen neglected_discount_cum = neglected * discount_cumulative
+label variable neglected_discount_cum "Cumulative Discounts x Neglected"
+gen global_discount_cum = global * discount_cumulative
+label variable global_discount_cum "Cumulative Discounts x Global"
+
+areg log_patent_count1 neglected_discount_cum global_discount_cum time prevalence i.year ,a(disease_code) cluster(disease_code)
+testparm neglected_discount_cum global_discount_cum
+outreg2 using thesis/intensity.doc, append ctitle("Cumulative Discounts") keep(neglected_discount_cum global_discount_cum time prevalence) addstat(Prob>F, `r(p)') addtext(Year FE, YES, Disease FE, YES, Cluster SE, Disease) label
+
+
+*******************************
+********** Both ***********
+*******************************
+areg log_patent_count1 neglected_CL_cum global_CL_cum neglected_discount_cum global_discount_cum time prevalence i.year ,a(disease_code) cluster(disease_code)
+testparm neglected_CL_cum global_CL_cum neglected_discount_cum global_discount_cum
+outreg2 using thesis/intensity.doc, append ctitle("Cumulative CLS", "and Discounts") keep(neglected_CL_cum global_CL_cum neglected_discount_cum global_discount_cum time prevalence) addstat(Prob>F, `r(p)') addtext(Year FE, YES, Disease FE, YES, Cluster SE, Disease) label
+
+
+************************************************************
+***********************Death Share****************************
+************************************************************
+gen neglected_CL_ds = neglected * CL_death_share
+label variable neglected_CL_ds "Neglected x Market Share Affected by CL"
+gen global_CL_ds = global * CL_death_share
+label variable global_CL_ds "Global x Market Share Affected by CL"
+
+gen neglected_discount_ds = neglected * discount_death_share
+label variable neglected_discount_ds "Neglected x Market Share Affected by Discount"
+gen global_discount_ds = global * discount_death_share
+label variable global_discount_ds "Global x Market Share Affected by Discount"
+
+areg log_patent_count1 neglected_CL_ds global_CL_ds neglected_discount_ds global_discount_ds time prevalence i.year, a(disease_code) cluster(disease_code)
+testparm neglected_CL_ds global_CL_ds neglected_discount_ds global_discount_ds
+outreg2 using thesis/death_share.doc, replace ctitle("Market Share", "by Deaths") keep(neglected_CL_ds global_CL_ds neglected_discount_ds global_discount_ds time prevalence) addstat(Prob>F, `r(p)') addtext(Year FE, YES, Disease FE, YES, Cluster SE, Disease) addnote("HIC: High Income Countries", "UMIC: Upper Middle Income Countries", "LMIC: Lower Middle Income Countries", "LIC: Low Income Countries") label
+
+********** interacted with income **********
+gen neglected_CL_ds_H = neglected * CL_death_share_H
+label variable neglected_CL_ds_H "Neglected x Market Share Affected by CL in HIC"
+gen global_CL_ds_H = global * CL_death_share_H
+label variable global_CL_ds_H "Global x Market Share Affected by CL in HIC"
+
+gen neglected_CL_ds_UM = neglected * CL_death_share_UM
+label variable neglected_CL_ds_UM "Neglected x Market Share Affected by CL in UMIC"
+gen global_CL_ds_UM = global * CL_death_share_UM
+label variable global_CL_ds_UM "Global x Market Share Affected by CL in UMIC"
+
+gen neglected_CL_ds_LM = neglected * CL_death_share_LM
+label variable neglected_CL_ds_LM "Neglected x Market Share Affected by CL in LMIC"
+gen global_CL_ds_LM = global * CL_death_share_LM
+label variable global_CL_ds_LM "Global x Market Share Affected by CL in LMIC"
+
+gen neglected_discount_ds_H = neglected * discount_death_share_H
+label variable neglected_discount_ds_H "Neglected x Market Share Affected by Discount in HIC"
+gen global_discount_ds_H = global * discount_death_share_H
+label variable global_discount_ds_H "Global x Market Share Affected by Discount in HIC"
+
+gen neglected_discount_ds_LM = neglected * discount_death_share_LM
+label variable neglected_discount_ds_LM "Neglected x Market Share Affected by Discount in LMIC"
+gen global_discount_ds_LM = global * discount_death_share_LM
+label variable global_discount_ds_LM "Global x Market Share Affected by Discount in LMIC"
+
+areg log_patent_count1 neglected_CL_ds_H global_CL_ds_H neglected_CL_ds_UM global_CL_ds_UM neglected_CL_ds_LM global_CL_ds_LM neglected_discount_ds_H global_discount_ds_H neglected_discount_ds_LM global_discount_ds_LM time prevalence i.year, a(disease_code) cluster(disease_code)
+testparm neglected_CL_ds_H global_CL_ds_H neglected_CL_ds_UM global_CL_ds_UM neglected_CL_ds_LM global_CL_ds_LM neglected_discount_ds_H global_discount_ds_H neglected_discount_ds_LM 
+
+outreg2 using thesis/death_share.doc, append ctitle("Market Share", "by Deaths") keep(neglected_CL_ds_H global_CL_ds_H neglected_CL_ds_UM global_CL_ds_UM neglected_CL_ds_LM global_CL_ds_LM neglected_discount_ds_H global_discount_ds_H neglected_discount_ds_LM time prevalence) addstat(Prob>F, `r(p)') addtext(Year FE, YES, Disease FE, YES, Cluster SE, Disease) label
+
+
+
+************************************************************
+***********************Population Share*********************
+************************************************************
+
+
+gen neglected_CL_pop = neglected * CL_population_share
+label variable neglected_CL_pop "Neglected x Market Share Affected by CL"
+gen global_CL_pop = global * CL_population_share
+label variable global_CL_pop "Global x Market Share Affected by CL"
+
+gen neglected_discount_pop = neglected * discount_population_share
+label variable neglected_discount_pop "Neglected x Market Share Affected by Discount"
+gen global_discount_pop = global * discount_population_share
+label variable global_discount_pop "Global x Market Share Affected by Discount"
+
+areg log_patent_count1 neglected_CL_pop global_CL_pop neglected_discount_pop global_discount_pop time prevalence i.year, a(disease_code) cluster(disease_code)
+testparm neglected_CL_pop global_CL_pop neglected_discount_pop global_discount_pop
+
+outreg2 using thesis/population_share.doc, replace ctitle("Market Share", "by Population") keep(neglected_CL_pop global_CL_pop neglected_discount_pop global_discount_pop time prevalence) addstat(Prob>F, `r(p)') addtext(Year FE, YES, Disease FE, YES, Cluster SE, Disease) addnote("HIC: High Income Countries", "UMIC: Upper Middle Income Countries", "LMIC: Lower Middle Income Countries", "LIC: Low Income Countries") label
+
+********** interacted with income **********
+gen neglected_CL_pop_H = neglected * CL_population_share_H
+label variable neglected_CL_pop_H "Neglected x Market Share Affected by CL in HIC"
+gen global_CL_pop_H = global * CL_population_share_H
+label variable global_CL_pop_H "Global x Market Share Affected by CL in HIC"
+
+gen neglected_CL_pop_UM = neglected * CL_population_share_UM
+label variable neglected_CL_pop_UM "Neglected x Market Share Affected by CL in UMIC"
+gen global_CL_pop_UM = global * CL_population_share_UM
+label variable global_CL_pop_UM "Global x Market Share Affected by CL in UMIC"
+
+gen neglected_CL_pop_LM = neglected * CL_population_share_LM
+label variable neglected_CL_pop_LM "Neglected x Market Share Affected by CL in LMIC"
+gen global_CL_pop_LM = global * CL_population_share_LM
+label variable global_CL_pop_LM "Global x Market Share Affected by CL in LMIC"
+
+gen neglected_CL_pop_L = neglected * CL_population_share_L
+label variable neglected_CL_pop_L "Neglected x Market Share Affected by CL in LIC"
+gen global_CL_pop_L = global * CL_population_share_L
+label variable global_CL_pop_L "Global x Market Share Affected by CL in LIC"
+
+gen neglected_discount_pop_H = neglected * discount_population_share_H
+label variable neglected_discount_pop_H "Neglected x Market Share Affected by Discount in HIC"
+gen global_discount_pop_H = global * discount_population_share_H
+label variable global_discount_pop_H "Global x Market Share Affected by Discount in HIC"
+
+gen neglected_discount_pop_LM = neglected * discount_population_share_LM
+label variable neglected_discount_pop_LM "Neglected x Market Share Affected by Discount in LMIC"
+gen global_discount_pop_LM = global * discount_population_share_LM
+label variable global_discount_pop_LM "Global x Market Share Affected by Discount in LMIC"
+
+areg log_patent_count1 neglected_CL_pop_H global_CL_pop_H neglected_CL_pop_UM global_CL_pop_UM neglected_CL_pop_LM global_CL_pop_LM neglected_CL_pop_L global_CL_pop_L neglected_discount_pop_H global_discount_pop_H neglected_discount_pop_LM global_discount_pop_LM time prevalence i.year, a(disease_code) cluster(disease_code)
+testparm neglected_CL_pop_H global_CL_pop_H neglected_CL_pop_UM global_CL_pop_UM neglected_CL_pop_LM global_CL_pop_LM neglected_CL_pop_L neglected_discount_pop_H global_discount_pop_H neglected_discount_pop_LM 
+
+outreg2 using thesis/population_share.doc, append ctitle("Market Share", "by Population") keep(neglected_CL_pop_H global_CL_pop_H neglected_CL_pop_UM global_CL_pop_UM neglected_CL_pop_LM global_CL_pop_LM neglected_CL_pop_L neglected_discount_pop_H global_discount_pop_H neglected_discount_pop_LM time prevalence) addstat(Prob>F, `r(p)') addtext(Year FE, YES, Disease FE, YES, Cluster SE, Disease)label
+
+************************************************************
+***********************Robustness Check*********************
+************************************************************
+**** cumulative with group-specific time trend
+areg log_patent_count1 neglected_CL_cum global_CL_cum neglected_discount_cum global_discount_cum time prevalence c.t#i.disease_code i.year ,a(disease_code) cluster(disease_code)
+testparm neglected_CL_cum global_CL_cum neglected_discount_cum global_discount_cum
+
+outreg2 using thesis/robust.doc, replace ctitle("Cumulative CLS and Discounts", "w/ Group Specific Time Trend") keep(neglected_CL_cum global_CL_cum neglected_discount_cum global_discount_cum time prevalence) addstat(Prob>F, `r(p)') addtext(Year FE, YES, Disease FE, YES, Cluster SE, Disease) addnote("HIC: High Income Countries", "UMIC: Upper Middle Income Countries", "LMIC: Lower Middle Income Countries", "LIC: Low Income Countries") label
+
+**** 
+areg log_patent_count1 neglected_CL_pop_H global_CL_pop_H neglected_CL_pop_UM global_CL_pop_UM neglected_CL_pop_LM global_CL_pop_LM neglected_CL_pop_L global_CL_pop_L neglected_discount_pop_H global_discount_pop_H neglected_discount_pop_LM global_discount_pop_LM time prevalence c.t#i.disease_code i.year, a(disease_code) cluster(disease_code)
+testparm neglected_CL_pop_H global_CL_pop_H neglected_CL_pop_UM global_CL_pop_UM neglected_CL_pop_LM global_CL_pop_LM neglected_CL_pop_L neglected_discount_pop_H global_discount_pop_H neglected_discount_pop_LM 
+
+outreg2 using thesis/robust.doc, append ctitle("Market Share by Population", "w/ Group Specific Time Trend") keep(neglected_CL_pop_H global_CL_pop_H neglected_CL_pop_UM global_CL_pop_UM neglected_CL_pop_LM global_CL_pop_LM neglected_CL_pop_L neglected_discount_pop_H global_discount_pop_H neglected_discount_pop_LM time prevalence) addstat(Prob>F, `r(p)') addtext(Year FE, YES, Disease FE, YES, Cluster SE, Disease) label
+
+log close thesis
